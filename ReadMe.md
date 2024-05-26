@@ -1,7 +1,7 @@
 # Mobility Data Lake Benchmark
 
-This repository contains the code and data utilities 
-to benchmark the performance of multiple data management 
+This repository contains the code and data utilities
+to benchmark the performance of multiple data management
 systems on mobility data.
 
 ## Installation
@@ -29,4 +29,5 @@ python benchmark.py
 You can modify the file to include or exclude specific data management systems.
 
 It is also possible to create new solutions by implementing the `BaseStore` interface.
+
 
