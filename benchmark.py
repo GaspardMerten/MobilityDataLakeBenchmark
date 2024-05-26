@@ -4,14 +4,14 @@ import random
 import time
 import uuid
 
+import matplotlib.pyplot as plt
+
 from stores.apache_parquet import ApacheParquetStore
-from stores.motion_lake import MotionLakeStore
 
 stores = [
-    (ApacheParquetStore(timestamp_group=1), 1),
-    (MotionLakeStore(), 2),
+    # The list of stores to benchmark, and whether to run read benchmarks
+    (ApacheParquetStore(timestamp_group=1), True),
 ]
-
 
 MAX_DOCUMENTS = 100
 RANDOM_READS = 1000
@@ -81,7 +81,7 @@ def benchmark():
 
         # Write all stats to a file
         with open(
-            f"results/benchmark_results_store_{benchmark_time}.json", "w"
+                f"results/benchmark_results_store_{benchmark_time}.json", "w"
         ) as file:
             json.dump(
                 {
@@ -91,7 +91,6 @@ def benchmark():
                 },
                 file,
             )
-    import matplotlib.pyplot as plt
 
     def plot_stats(stats, title):
         plt.figure(figsize=(20, 10))

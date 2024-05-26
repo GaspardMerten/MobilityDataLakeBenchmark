@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14
+    container_name: postgres_geototrip
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres:/var/lib/postgresql/data
+
+  mongo:
+    image: mongo
+    container_name: mongo_geototrip
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo:/data/db
+      - ./mongod.conf:/etc/mongod.conf
+    command: mongod --config /etc/mongod.conf
+
+  mobilitydb:
+    build:
+      context: .
+      dockerfile: MobilityDBDockerFile
+    volumes:
+      - mobilitydb-data:/var/lib/postgresql/data
+    ports:
+      - 5434:5432
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    restart: on-failure
+  timescaledb:
+    build:
+      context: .
+      dockerfile: TimeScaleDBDockerfile
+    container_name: timescaledb_geototrip
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - timescaledb:/var/lib/postgresql/data
+
+  citus_master:
+    container_name: citus_master_geototrip
+    image: "citusdata/citus:12.1.2"
+    ports: [ "5432:5432" ]
+    labels: [ "com.citusdata.role=Master" ]
+    environment: &AUTH
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+    networks:
+      - citus
+  citus_worker:
+    container_name: citus_worker_geototrip
+    image: "citusdata/citus:12.1.2"
+    labels: [ "com.citusdata.role=Worker" ]
+    depends_on: [ citus_master ]
+    environment: *AUTH
+    command: "/wait-for-manager.sh"
+    volumes:
+      - healthcheck-volume:/healthcheck
+    networks:
+        - citus
+  citus_manager:
+    container_name: citus_manager_geototrip
+    image: "citusdata/membership-manager:0.3.0"
+    volumes:
+      - "${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock"
+      - healthcheck-volume:/healthcheck
+    depends_on: [ citus_master ]
+    networks:
+      - citus
+    environment: *AUTH
+networks:
+  citus:
+    driver: bridge
+volumes:
+  healthcheck-volume:
+  mobilitydb-data:
+  postgres:
+  timescaledb:
+  mongo:
+  citus:
